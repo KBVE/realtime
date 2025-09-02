@@ -44,8 +44,7 @@ jobs:
       - name: Sync if changes exist
         if: steps.check.outputs.changes == 'true'
         run: |
-          git checkout -B upstream
-          git merge upstream/main
+          git checkout -B upstream upstream/main
           git push origin upstream
 
       - name: Create Pull Request
