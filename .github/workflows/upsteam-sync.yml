@@ -16,12 +16,14 @@ jobs:
       - name: repo-sync
         id: sync
         uses: repo-sync/github-sync@7c8493e95237362ad417495e8512c37e78d25f19
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           source_repo: "https://github.com/supabase/realtime"
           source_branch: "main"
           destination_branch: "upstream"
           sync_tags: ""
-          token: ${{ secrets.UNITY_PAT }}
+          github_token: ${{ secrets.UNITY_PAT }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
