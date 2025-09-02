@@ -42,7 +42,7 @@ jobs:
         id: check-versions
         working-directory: kbve-repo
         run: |
-          STATEFULSET_FILE="kbve/apps/kube/realtime/manifests/realtime-statefulset.yaml"
+          STATEFULSET_FILE="apps/kube/realtime/manifests/realtime-statefulset.yaml"
           
           # Debug: Check if file exists
           if [ ! -f "$STATEFULSET_FILE" ]; then
@@ -104,7 +104,7 @@ jobs:
         run: |
           NEW_VERSION="${{ steps.check-versions.outputs.new_version }}"
           BRANCH_NAME="${{ steps.check-pr.outputs.branch_name }}"
-          STATEFULSET_FILE="kbve/apps/kube/realtime/manifests/realtime-statefulset.yaml"
+          STATEFULSET_FILE="apps/kube/realtime/manifests/realtime-statefulset.yaml"
           
           # Debug: Check if file exists
           if [ ! -f "$STATEFULSET_FILE" ]; then
