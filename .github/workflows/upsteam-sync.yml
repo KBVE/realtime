@@ -29,8 +29,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: upstream-main
-          base: main
+          branch: main
+          base: upstream-main
           title: "🔄 Sync with upstream changes"
           body: |
             ## Upstream Sync
