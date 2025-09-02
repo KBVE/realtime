@@ -81,7 +81,7 @@ defmodule RealtimeWeb.RealtimeChannel do
 
       RealtimeWeb.Endpoint.subscribe(tenant_topic, metadata: metadata)
 
-      Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant_id)
+      Phoenix.PubSub.subscribe(Realtime.PubSub, Tenants.operations_topic(tenant_id))
 
       is_new_api = new_api?(params)
       # TODO: Default will be moved to false in the future

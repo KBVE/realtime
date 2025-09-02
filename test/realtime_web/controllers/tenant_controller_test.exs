@@ -272,7 +272,7 @@ defmodule RealtimeWeb.TenantControllerTest do
     setup [:with_tenant]
 
     test "reload when tenant does exist", %{conn: conn, tenant: %{external_id: external_id} = tenant} do
-      Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> external_id)
+      Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(external_id))
 
       [%{settings: settings}] = tenant.extensions
       settings = Map.put(settings, "id", external_id)

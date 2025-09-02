@@ -35,7 +35,7 @@ defmodule Realtime.TenantsTest do
   describe "suspend_tenant_by_external_id/1" do
     setup do
       tenant = tenant_fixture()
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       %{tenant: tenant}
     end
 
@@ -56,7 +56,7 @@ defmodule Realtime.TenantsTest do
   describe "unsuspend_tenant_by_external_id/1" do
     setup do
       tenant = tenant_fixture(%{suspend: true})
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       %{tenant: tenant}
     end
 
@@ -101,7 +101,7 @@ defmodule Realtime.TenantsTest do
   describe "broadcast_operation_event/2" do
     setup do
       tenant = tenant_fixture()
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       %{tenant: tenant}
     end
 

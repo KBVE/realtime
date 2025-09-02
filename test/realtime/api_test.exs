@@ -120,25 +120,25 @@ defmodule Realtime.ApiTest do
     end
 
     test "valid data and jwks change will send disconnect event", %{tenant: tenant} do
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       assert {:ok, %Tenant{}} = Api.update_tenant(tenant, %{jwt_jwks: %{keys: ["test"]}})
       assert_receive :disconnect, 500
     end
 
     test "valid data and jwt_secret change will send disconnect event", %{tenant: tenant} do
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       assert {:ok, %Tenant{}} = Api.update_tenant(tenant, %{jwt_secret: "potato"})
       assert_receive :disconnect, 500
     end
 
     test "valid data and suspend change will send disconnect event", %{tenant: tenant} do
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       assert {:ok, %Tenant{}} = Api.update_tenant(tenant, %{suspend: true})
       assert_receive :disconnect, 500
     end
 
     test "valid data but not updating jwt_secret or jwt_jwks won't send event", %{tenant: tenant} do
-      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant.external_id)
+      :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant.external_id))
       assert {:ok, %Tenant{}} = Api.update_tenant(tenant, %{max_events_per_second: 100})
       refute_receive :disconnect, 500
     end

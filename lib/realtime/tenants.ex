@@ -436,11 +436,21 @@ defmodule Realtime.Tenants do
   end
 
   @doc """
+  Returns the operations topic for a tenant.
+  Uses a safe namespace that won't conflict with any external_id.
+  """
+  @spec operations_topic(String.t()) :: String.t()
+  def operations_topic(external_id) do
+    # Use a tuple-like format that can't be created by simple concatenation
+    "{operations,#{external_id}}"
+  end
+
+  @doc """
   Broadcasts an operation event to the tenant's operations channel.
   """
   @spec broadcast_operation_event(:suspend_tenant | :unsuspend_tenant | :disconnect, String.t()) :: :ok
   def broadcast_operation_event(action, external_id),
-    do: Phoenix.PubSub.broadcast!(Realtime.PubSub, "realtime:operations:" <> external_id, action)
+    do: Phoenix.PubSub.broadcast!(Realtime.PubSub, operations_topic(external_id), action)
 
   @doc """
   Returns the region of the tenant based on its extensions.

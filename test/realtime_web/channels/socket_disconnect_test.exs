@@ -99,7 +99,7 @@ defmodule RealtimeWeb.SocketDisconnectTest do
 
     test "after disconnect, pid is unregistered" do
       tenant_external_id = random_string()
-      PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant_external_id)
+      PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant_external_id))
       %{tenant: tenant_pids, other: other_pids} = DisconnectTestAux.generate_tenant_processes(tenant_external_id)
 
       # Ensure all processes are alive before disconnecting

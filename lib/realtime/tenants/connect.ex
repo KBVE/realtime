@@ -286,7 +286,7 @@ defmodule Realtime.Tenants.Connect do
       tenant_id: tenant_id
     } = state
 
-    :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, "realtime:operations:" <> tenant_id)
+    :ok = Phoenix.PubSub.subscribe(Realtime.PubSub, Realtime.Tenants.operations_topic(tenant_id))
     send_connected_user_check_message(connected_users_bucket, check_connected_user_interval)
     :ets.insert(__MODULE__, {tenant_id})
     {:noreply, state, {:continue, :start_connect_region_check}}
