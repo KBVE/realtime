@@ -21,7 +21,7 @@ jobs:
         with:
           source_repo: "https://github.com/supabase/realtime"
           source_branch: "main"
-          destination_branch: "upstream"
+          destination_branch: "upstream-main"
           sync_tags: ""
           github_token: ${{ secrets.UNITY_PAT }}
 
