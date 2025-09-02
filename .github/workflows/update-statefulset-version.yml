@@ -43,6 +43,15 @@ jobs:
         working-directory: kbve-repo
         run: |
           STATEFULSET_FILE="kbve/apps/kube/realtime/manifests/realtime-statefulset.yaml"
+          
+          # Debug: Check if file exists
+          if [ ! -f "$STATEFULSET_FILE" ]; then
+            echo "ERROR: StatefulSet file not found at $STATEFULSET_FILE"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
           MIX_VERSION="${{ steps.version.outputs.version }}"
           
           # Extract current image version from StatefulSet
@@ -96,6 +105,15 @@ jobs:
           NEW_VERSION="${{ steps.check-versions.outputs.new_version }}"
           BRANCH_NAME="${{ steps.check-pr.outputs.branch_name }}"
           STATEFULSET_FILE="kbve/apps/kube/realtime/manifests/realtime-statefulset.yaml"
+          
+          # Debug: Check if file exists
+          if [ ! -f "$STATEFULSET_FILE" ]; then
+            echo "ERROR: StatefulSet file not found at $STATEFULSET_FILE"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
           
           # Configure git
           git config user.name "github-actions[bot]"
