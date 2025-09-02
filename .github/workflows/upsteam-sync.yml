@@ -37,11 +37,9 @@ jobs:
             echo "PR with title '$PR_TITLE' already exists. Skipping PR creation."
           else
             echo "No existing PR found. Creating new PR..."
-            gh pr create \
-              --base main \
-              --head upstream-main \
-              --title "$PR_TITLE" \
-              --body "## Upstream Sync
+            
+            # Create PR body in a variable to avoid YAML issues
+            PR_BODY="## Upstream Sync
 
 This PR contains the latest changes from the upstream repository.
 
@@ -56,4 +54,10 @@ This PR contains the latest changes from the upstream repository.
 
 ---
 *This PR was automatically created by the upstream sync workflow*"
+            
+            gh pr create \
+              --base main \
+              --head upstream-main \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
           fi
