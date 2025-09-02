@@ -1,6 +1,9 @@
 name: Manual Docker Build & Release
 
 on:
+  push:
+    branches:
+      - prod
   workflow_dispatch:
     inputs:
       docker_tag:
@@ -25,7 +28,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.git_ref }}
+          ref: ${{ inputs.git_ref || github.ref }}
       
       - name: Extract version from mix.exs
         id: version
@@ -50,7 +53,7 @@ jobs:
         with:
           images: ghcr.io/kbve/realtime
           tags: |
-            type=raw,value=${{ inputs.docker_tag }}
+            type=raw,value=${{ inputs.docker_tag || 'latest' }}
             type=raw,value=v${{ steps.version.outputs.version }}
             type=sha,prefix={{branch}}-
             type=raw,value={{branch}}-{{date 'YYYYMMDD-HHmmss'}}
@@ -76,7 +79,7 @@ jobs:
           echo "## Docker Image Built Successfully! 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image Registry:** GitHub Container Registry" >> $GITHUB_STEP_SUMMARY
-          echo "**Primary Tag:** \`ghcr.io/kbve/realtime:${{ inputs.docker_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Primary Tag:** \`ghcr.io/kbve/realtime:${{ inputs.docker_tag || 'latest' }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Version Tag:** \`ghcr.io/kbve/realtime:v${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### All Tags:" >> $GITHUB_STEP_SUMMARY
@@ -86,10 +89,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pull Command:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/kbve/realtime:${{ inputs.docker_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/kbve/realtime:${{ inputs.docker_tag || 'latest' }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Run Command:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -p 4000:4000 ghcr.io/kbve/realtime:${{ inputs.docker_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 4000:4000 ghcr.io/kbve/realtime:${{ inputs.docker_tag || 'latest' }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
