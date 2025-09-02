@@ -1,13 +1,16 @@
-name: "Sync with upstream"
+name: Sync with upstream
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # Run daily at 6 AM UTC
-  workflow_dispatch:  # Allow manual trigger
+    - cron: '0 6 * * *'
 
 jobs:
   repo-sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
