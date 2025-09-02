@@ -30,7 +30,7 @@ jobs:
 
       - name: Create Pull Request from console
         env:
-          GH_TOKEN: ${{ secrets.UNITY_PAT }}
+          GH_TOKEN: ${{ secrets.PAT }}
         run: |
           # Check if PR already exists with this title
           PR_TITLE="🔄 Sync with upstream changes"
