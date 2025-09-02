@@ -468,6 +468,17 @@ defmodule RealtimeWeb.RealtimeChannel do
   end
 
   @impl true
+  def handle_out("broadcast", payload, socket) do
+    push(socket, "broadcast", payload)
+    {:noreply, socket}
+  end
+
+  def handle_out(event, payload, socket) do
+    push(socket, event, payload)
+    {:noreply, socket}
+  end
+
+  @impl true
   def terminate(reason, %{transport_pid: transport_pid}) do
     Logger.debug("Channel terminated with reason: #{reason}")
     :telemetry.execute([:prom_ex, :plugin, :realtime, :disconnected], %{})
