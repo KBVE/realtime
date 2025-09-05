@@ -20,9 +20,9 @@ jobs:
       - name: Get current upstream-main commit
         id: before_sync
         run: |
-          # Check if upstream-main branch exists and get its commit hash
-          if git show-ref --verify --quiet refs/heads/upstream-main; then
-            BEFORE_COMMIT=$(git rev-parse upstream-main)
+          # Check if upstream-main branch exists on remote and get its commit hash
+          if git ls-remote --exit-code --heads origin upstream-main > /dev/null 2>&1; then
+            BEFORE_COMMIT=$(git ls-remote origin upstream-main | cut -f1)
             echo "before_commit=$BEFORE_COMMIT" >> $GITHUB_OUTPUT
             echo "upstream-main commit before sync: $BEFORE_COMMIT"
           else
@@ -45,8 +45,11 @@ jobs:
       - name: Check for changes in upstream-main
         id: check_changes
         run: |
+          # Fetch all branches to ensure we have the latest upstream-main
+          git fetch origin
+          
           # Get the commit hash of upstream-main after sync
-          AFTER_COMMIT=$(git rev-parse upstream-main)
+          AFTER_COMMIT=$(git rev-parse origin/upstream-main)
           echo "after_commit=$AFTER_COMMIT" >> $GITHUB_OUTPUT
           echo "upstream-main commit after sync: $AFTER_COMMIT"
           
