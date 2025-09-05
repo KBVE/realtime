@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     # Only run for PRs with the upstream sync title and from upstream-main branch
     if: >
-      github.event.pull_request.title == '🔄 Sync with upstream changes' &&
+      contains(github.event.pull_request.title, 'Sync with upstream changes') &&
       github.event.pull_request.head.ref == 'upstream-main' &&
       github.event.pull_request.base.ref == 'main'
     
