@@ -186,9 +186,10 @@ defmodule Realtime.Api do
     |> repo.preload(:extensions)
   end
 
-  defp list_extensions(type \\ "postgres_cdc_rls") do
-    from(e in Extensions, where: e.type == ^type, select: e)
-    |> Repo.all()
+  def list_extensions(type) do
+    query = from(e in Extensions, where: e.type == ^type, select: e)
+
+    Repo.all(query)
   end
 
   def rename_settings_field(from, to) do

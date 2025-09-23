@@ -11,6 +11,22 @@ defmodule Realtime.GenRpc do
   @type result :: any | {:error, :rpc_error, reason :: any}
 
   @doc """
+  Broadcasts the message `msg` asynchronously to the registered process `name` on the specified `nodes`.
+
+  Options:
+
+  - `:key` - Optional key to consistently select the same gen_rpc clients to guarantee message order between nodes
+  """
+  @spec abcast([node], atom, any, keyword()) :: :ok
+  def abcast(nodes, name, msg, opts) when is_list(nodes) and is_atom(name) and is_list(opts) do
+    key = Keyword.get(opts, :key, nil)
+    nodes = rpc_nodes(nodes, key)
+
+    :gen_rpc.abcast(nodes, name, msg)
+    :ok
+  end
+
+  @doc """
   Fire and forget apply(mod, func, args) on all nodes
 
   Options:
@@ -41,6 +57,23 @@ defmodule Realtime.GenRpc do
   @spec call(node, module, atom, list(any), keyword()) :: result
   def call(node, mod, func, args, opts)
       when is_atom(node) and is_atom(mod) and is_atom(func) and is_list(args) and is_list(opts) do
+    if node == node() or node in Node.list() do
+      do_call(node, mod, func, args, opts)
+    else
+      tenant_id = Keyword.get(opts, :tenant_id)
+
+      log_error(
+        "ErrorOnRpcCall",
+        %{target: node, mod: mod, func: func, error: :badnode},
+        project: tenant_id,
+        external_id: tenant_id
+      )
+
+      {:error, :rpc_error, :badnode}
+    end
+  end
+
+  defp do_call(node, mod, func, args, opts) do
     timeout = Keyword.get(opts, :timeout, default_rpc_timeout())
     tenant_id = Keyword.get(opts, :tenant_id)
     key = Keyword.get(opts, :key, nil)
