@@ -16,6 +16,15 @@ defmodule RealtimeWeb.Endpoint do
       connect_info: [:peer_data, :uri, :x_headers],
       fullsweep_after: 20,
       max_frame_size: 8_000_000,
+      # https://github.com/ninenines/cowboy/blob/24d32de931a0c985ff7939077463fc8be939f0e9/doc/src/manual/cowboy_websocket.asciidoc#L228
+      # active_n: The number of packets Cowboy will request from the socket at once.
+      # This can be used to tweak the performance of the server. Higher values reduce
+      # the number of times Cowboy need to request more packets from the port driver at
+      # the expense of potentially higher memory being used.
+      active_n: 100,
+      # Skip validating UTF8 for faster frame processing.
+      # Currently all text frames as handled only with JSON which already requires UTF-8
+      validate_utf8: false,
       serializer: [
         {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
         {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}

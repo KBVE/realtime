@@ -94,7 +94,7 @@ You can add your own by making a `POST` request to the server. You must change b
             "region": "us-west-1",
             "poll_interval_ms": 100,
             "poll_max_record_bytes": 1048576,
-            "ssl_enforced": false  
+            "ssl_enforced": false
           }
         }
       ]
@@ -169,6 +169,7 @@ If you're using the default tenant, the URL is `ws://realtime-dev.localhost:4000
 | CONNECT_PARTITION_SLOTS                         | number  | Number of dynamic supervisor partitions used by the Connect, ReplicationConnect processes                                                                                                                                                                                                                                       |
 | METRICS_CLEANER_SCHEDULE_TIMER_IN_MS            | number  | Time in ms to run the Metric Cleaner task                                                                                                                                                                                                                                                                                       |
 | METRICS_RPC_TIMEOUT_IN_MS                       | number  | Time in ms to wait for RPC call to fetch Metric per node                                                                                                                                                                                                                                                                        |
+| WEBSOCKET_MAX_HEAP_SIZE                         | number  | Max number of bytes to be allocated as heap for the WebSocket transport process. If the limit is reached the process is brutally killed. Defaults to 50MB.                                                                                                                                                                      |
 | REQUEST_ID_BAGGAGE_KEY                          | string  | OTEL Baggage key to be used as request id                                                                                                                                                                                                                                                                                       |
 | OTEL_SDK_DISABLED                               | boolean | Disable OpenTelemetry tracing completely when 'true'                                                                                                                                                                                                                                                                            |
 | OTEL_TRACES_EXPORTER                            | string  | Possible values: `otlp` or `none`. See [https://github.com/open-telemetry/opentelemetry-erlang/tree/v1.4.0/apps#os-environment] for more details on how to configure the traces exporter.                                                                                                                                       |
@@ -190,6 +191,8 @@ If you're using the default tenant, the URL is `ws://realtime-dev.localhost:4000
 | MAX_GEN_RPC_CLIENTS                             | number  | Max amount of `gen_rpc` TCP connections per node-to-node channel                                                                                                                                                                                                                                                                |
 | REBALANCE_CHECK_INTERVAL_IN_MS                  | number  | Time in ms to check if process is in the right region                                                                                                                                                                                                                                                                           |
 | DISCONNECT_SOCKET_ON_NO_CHANNELS_INTERVAL_IN_MS | number  | Time in ms to check if a socket has no channels open and if so, disconnect it                                                                                                                                                                                                                                                   |
+| BROADCAST_POOL_SIZE                             | number  | Number of processes to relay Phoenix.PubSub messages across the cluster                                                                                                                                                                                                                                                         |
+
 
 The OpenTelemetry variables mentioned above are not an exhaustive list of all [supported environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/).
 
@@ -284,6 +287,7 @@ This is the list of operational codes that can help you understand your deployme
 | UnknownErrorOnController           | An error we are not handling correctly was triggered on a controller                                                                                                                                  |
 | UnknownErrorOnChannel              | An error we are not handling correctly was triggered on a channel                                                                                                                                     |
 | PresenceRateLimitReached           | Limit of presence events reached                                                                                                                                                                      |
+| UnableToReplayMessages             | An error while replaying messages                                                                                                                                                                     |
 
 ## License
 
