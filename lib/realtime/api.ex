@@ -186,7 +186,7 @@ defmodule Realtime.Api do
     |> repo.preload(:extensions)
   end
 
-  defp list_extensions(type) do
+  def list_extensions(type) do
     query = from(e in Extensions, where: e.type == ^type, select: e)
 
     Repo.all(query)
