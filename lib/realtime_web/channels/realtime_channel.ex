@@ -167,6 +167,10 @@ defmodule RealtimeWeb.RealtimeChannel do
         msg = "Database can't accept more connections, Realtime won't connect"
         log_error(socket, "DatabaseLackOfConnections", msg)
 
+      {:error, :connect_rate_limit_reached} ->
+        msg = "Too many database connections attempts per second"
+        log_error(socket, "DatabaseConnectionRateLimitReached", msg)
+
       {:error, :unable_to_set_policies, error} ->
         log_error(socket, "UnableToSetPolicies", error)
         {:error, %{reason: "Realtime was unable to connect to the project database"}}
@@ -212,6 +216,9 @@ defmodule RealtimeWeb.RealtimeChannel do
 
       {:error, :invalid_replay_params} ->
         log_error(socket, "UnableToReplayMessages", "Replay params are not valid")
+
+      {:error, :invalid_replay_channel} ->
+        log_error(socket, "UnableToReplayMessages", "Replay is not allowed for public channels")
 
       {:error, error} ->
         log_error(socket, "UnknownErrorOnChannel", error)
@@ -790,7 +797,7 @@ defmodule RealtimeWeb.RealtimeChannel do
   end
 
   defp maybe_replay_messages(%{"broadcast" => %{"replay" => _}}, _sub_topic, _db_conn, false = _private?) do
-    {:error, :invalid_replay_params}
+    {:error, :invalid_replay_channel}
   end
 
   defp maybe_replay_messages(%{"broadcast" => %{"replay" => replay_params}}, sub_topic, db_conn, true = _private?)
