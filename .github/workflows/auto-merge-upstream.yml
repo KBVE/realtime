@@ -1,0 +1,131 @@
+name: Auto-merge upstream sync PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+jobs:
+  auto-merge-upstream:
+    runs-on: ubuntu-latest
+    # Only run for PRs with the upstream sync title and from upstream-main branch
+    if: >
+      contains(github.event.pull_request.title, 'Sync with upstream changes') &&
+      github.event.pull_request.head.ref == 'upstream-main' &&
+      github.event.pull_request.base.ref == 'main'
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.UNITY_PAT }}
+          fetch-depth: 0
+      
+      - name: Check for merge conflicts
+        id: conflict-check
+        run: |
+          # Fetch the latest changes
+          git fetch origin main
+          git fetch origin upstream-main
+          
+          # Try to merge upstream-main into main to check for conflicts
+          git checkout main
+          git pull origin main
+          
+          # Attempt a test merge
+          if git merge --no-commit --no-ff origin/upstream-main; then
+            echo "merge_conflict=false" >> $GITHUB_OUTPUT
+            echo "✅ No merge conflicts detected"
+            # Abort the test merge
+            git merge --abort 2>/dev/null || true
+          else
+            echo "merge_conflict=true" >> $GITHUB_OUTPUT
+            echo "❌ Merge conflicts detected"
+            # Abort the failed merge
+            git merge --abort 2>/dev/null || true
+            exit 0  # Don't fail the workflow, just skip auto-merge
+          fi
+      
+      - name: Wait for status checks
+        if: steps.conflict-check.outputs.merge_conflict == 'false'
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: 'repo-sync'
+          repo-token: ${{ secrets.UNITY_PAT }}
+          wait-interval: 30
+          allowed-conclusions: success,skipped,neutral
+        continue-on-error: true
+      
+      - name: Check if PR is ready for merge
+        if: steps.conflict-check.outputs.merge_conflict == 'false'
+        id: ready-check
+        env:
+          GH_TOKEN: ${{ secrets.UNITY_PAT }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          
+          # Get PR status
+          PR_STATUS=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --jq '{mergeable: .mergeable, status: .mergeStateStatus}')
+          echo "PR Status: $PR_STATUS"
+          
+          MERGEABLE=$(echo "$PR_STATUS" | jq -r '.mergeable')
+          MERGE_STATE=$(echo "$PR_STATUS" | jq -r '.status')
+          
+          echo "Mergeable: $MERGEABLE"
+          echo "Merge State: $MERGE_STATE"
+          
+          # Check if PR is mergeable
+          if [ "$MERGEABLE" = "MERGEABLE" ] || [ "$MERGEABLE" = "true" ]; then
+            echo "ready_to_merge=true" >> $GITHUB_OUTPUT
+            echo "✅ PR is ready to merge"
+          else
+            echo "ready_to_merge=false" >> $GITHUB_OUTPUT
+            echo "❌ PR is not ready to merge (mergeable: $MERGEABLE, state: $MERGE_STATE)"
+          fi
+      
+      - name: Auto-merge PR
+        if: >
+          steps.conflict-check.outputs.merge_conflict == 'false' &&
+          steps.ready-check.outputs.ready_to_merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.UNITY_PAT }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          
+          echo "🚀 Auto-merging upstream sync PR #$PR_NUMBER"
+          
+          # Add a comment before merging
+          gh pr comment $PR_NUMBER --body "🤖 **Auto-merge**: No merge conflicts detected. Automatically merging upstream sync changes."
+          
+          # Merge the PR using squash merge
+          gh pr merge $PR_NUMBER --squash --delete-branch
+          
+          echo "✅ Successfully auto-merged PR #$PR_NUMBER"
+      
+      - name: Comment on failed auto-merge
+        if: >
+          steps.conflict-check.outputs.merge_conflict == 'true' ||
+          (steps.conflict-check.outputs.merge_conflict == 'false' && steps.ready-check.outputs.ready_to_merge == 'false')
+        env:
+          GH_TOKEN: ${{ secrets.UNITY_PAT }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          
+          if [ "${{ steps.conflict-check.outputs.merge_conflict }}" = "true" ]; then
+            REASON="merge conflicts were detected"
+            ICON="⚠️"
+          else
+            REASON="the PR is not in a mergeable state"
+            ICON="🔄"
+          fi
+          
+          gh pr comment $PR_NUMBER --body "$ICON **Auto-merge skipped**: This upstream sync PR was not automatically merged because $REASON. Please review and merge manually if appropriate."
+          
+          echo "ℹ️ Auto-merge skipped - commented on PR #$PR_NUMBER"
