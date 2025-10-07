@@ -36,10 +36,10 @@ defmodule Realtime.PromEx.Plugins.Tenant do
           event_name: [:realtime, :tenants, :payload, :size],
           measurement: :size,
           description: "Tenant payload size",
-          tags: [:tenant],
+          tags: [:tenant, :message_type],
           unit: :byte,
           reporter_options: [
-            buckets: [100, 250, 500, 1000, 2000, 3000, 5000, 10_000, 25_000]
+            buckets: [250, 500, 1000, 3000, 5000, 10_000, 25_000, 100_000, 500_000, 1_000_000, 3_000_000]
           ]
         ),
         distribution(
@@ -47,9 +47,10 @@ defmodule Realtime.PromEx.Plugins.Tenant do
           event_name: [:realtime, :tenants, :payload, :size],
           measurement: :size,
           description: "Payload size",
+          tags: [:message_type],
           unit: :byte,
           reporter_options: [
-            buckets: [100, 250, 500, 1000, 2000, 3000, 5000, 10_000, 25_000]
+            buckets: [250, 500, 1000, 3000, 5000, 10_000, 25_000, 100_000, 500_000, 1_000_000, 3_000_000]
           ]
         )
       ]
@@ -158,6 +159,12 @@ defmodule Realtime.PromEx.Plugins.Tenant do
           tags: [:tenant]
         ),
         sum(
+          [:realtime, :channel, :global, :events],
+          event_name: [:realtime, :rate_counter, :channel, :events],
+          measurement: :sum,
+          description: "Global sum of messages sent on a Realtime Channel."
+        ),
+        sum(
           [:realtime, :channel, :presence_events],
           event_name: [:realtime, :rate_counter, :channel, :presence_events],
           measurement: :sum,
@@ -165,11 +172,23 @@ defmodule Realtime.PromEx.Plugins.Tenant do
           tags: [:tenant]
         ),
         sum(
+          [:realtime, :channel, :global, :presence_events],
+          event_name: [:realtime, :rate_counter, :channel, :presence_events],
+          measurement: :sum,
+          description: "Global sum of presence messages sent on a Realtime Channel."
+        ),
+        sum(
           [:realtime, :channel, :db_events],
           event_name: [:realtime, :rate_counter, :channel, :db_events],
           measurement: :sum,
           description: "Sum of db messages sent on a Realtime Channel.",
           tags: [:tenant]
+        ),
+        sum(
+          [:realtime, :channel, :global, :db_events],
+          event_name: [:realtime, :rate_counter, :channel, :db_events],
+          measurement: :sum,
+          description: "Global sum of db messages sent on a Realtime Channel."
         ),
         sum(
           [:realtime, :channel, :joins],

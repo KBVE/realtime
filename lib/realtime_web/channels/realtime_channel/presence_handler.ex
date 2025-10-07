@@ -11,7 +11,7 @@ defmodule RealtimeWeb.RealtimeChannel.PresenceHandler do
   alias Phoenix.Tracker.Shard
   alias Realtime.GenCounter
   alias Realtime.RateCounter
-  alias Realtime.Tenants
+  # alias Realtime.Tenants
   alias Realtime.Tenants.Authorization
   alias RealtimeWeb.Presence
   alias RealtimeWeb.RealtimeChannel.Logging
@@ -109,6 +109,7 @@ defmodule RealtimeWeb.RealtimeChannel.PresenceHandler do
 
     %{assigns: %{presence_key: presence_key, tenant_topic: tenant_topic}} = socket
     payload = Map.get(payload, "payload", %{})
+    RealtimeWeb.TenantBroadcaster.collect_payload_size(socket.assigns.tenant, payload, :presence)
 
     with :ok <- limit_presence_event(socket),
          {:ok, _} <- Presence.track(self(), tenant_topic, presence_key, payload) do
@@ -138,13 +139,14 @@ defmodule RealtimeWeb.RealtimeChannel.PresenceHandler do
     |> Phoenix.Presence.group()
   end
 
+  @presence_limit 100
   defp limit_presence_event(socket) do
-    %{assigns: %{presence_rate_counter: presence_counter, tenant: tenant_id}} = socket
+    %{assigns: %{presence_rate_counter: presence_counter, tenant: _tenant_id}} = socket
     {:ok, rate_counter} = RateCounter.get(presence_counter)
 
-    tenant = Tenants.Cache.get_tenant_by_external_id(tenant_id)
+    # tenant = Tenants.Cache.get_tenant_by_external_id(tenant_id)
 
-    if rate_counter.avg > tenant.max_presence_events_per_second do
+    if rate_counter.avg > @presence_limit do
       {:error, :rate_limit_exceeded}
     else
       GenCounter.add(presence_counter.id)
