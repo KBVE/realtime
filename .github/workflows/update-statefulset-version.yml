@@ -1,0 +1,179 @@
+name: Update StatefulSet Version
+
+on:
+  workflow_run:
+    workflows: ["Manual Docker Build & Release"]
+    types:
+      - completed
+    branches:
+      - prod
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout realtime repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.UNITY_PAT }}
+      
+      - name: Extract version from mix.exs
+        id: version
+        run: |
+          VERSION=$(grep -oP 'version: "\K[^"]+' mix.exs)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+      
+      - name: Checkout kbve/kbve repo
+        uses: actions/checkout@v4
+        with:
+          repository: kbve/kbve
+          token: ${{ secrets.UNITY_PAT }}
+          path: kbve-repo
+          fetch-depth: 0
+      
+      - name: Check StatefulSet versions
+        id: check-versions
+        working-directory: kbve-repo
+        run: |
+          STATEFULSET_FILE="apps/kube/realtime/manifests/realtime-statefulset.yaml"
+          
+          # Debug: Check if file exists
+          if [ ! -f "$STATEFULSET_FILE" ]; then
+            echo "ERROR: StatefulSet file not found at $STATEFULSET_FILE"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
+          MIX_VERSION="${{ steps.version.outputs.version }}"
+          
+          # Extract current image version from StatefulSet
+          CURRENT_IMAGE_VERSION=$(grep -oP 'image: ghcr\.io/kbve/realtime:v\K[^"]+' "$STATEFULSET_FILE" || echo "")
+          
+          # Extract current mountPath version from StatefulSet
+          CURRENT_MOUNT_VERSION=$(grep -oP 'mountPath: /app/lib/realtime-\K[^/]+' "$STATEFULSET_FILE" || echo "")
+          
+          echo "Mix.exs version: $MIX_VERSION"
+          echo "Current image version: $CURRENT_IMAGE_VERSION"
+          echo "Current mountPath version: $CURRENT_MOUNT_VERSION"
+          
+          # Check if versions match
+          if [ "$MIX_VERSION" = "$CURRENT_IMAGE_VERSION" ] && [ "$MIX_VERSION" = "$CURRENT_MOUNT_VERSION" ]; then
+            echo "All versions match. No update needed."
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version mismatch detected. Update needed."
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "new_version=$MIX_VERSION" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check if PR already exists
+        if: steps.check-versions.outputs.needs_update == 'true'
+        id: check-pr
+        working-directory: kbve-repo
+        env:
+          GH_TOKEN: ${{ secrets.UNITY_PAT }}
+        run: |
+          NEW_VERSION="${{ steps.check-versions.outputs.new_version }}"
+          BRANCH_NAME="realtime-upgrade-v$NEW_VERSION"
+          PR_TITLE="🚀 Update realtime StatefulSet to v$NEW_VERSION"
+          
+          # Check if PR already exists with this title
+          EXISTING_PR=$(gh pr list --base main --state open --json title --jq ".[] | select(.title == \"$PR_TITLE\") | .title")
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR with title '$PR_TITLE' already exists. Skipping."
+            echo "create_pr=false" >> $GITHUB_OUTPUT
+          else
+            echo "No existing PR found. Will create new PR."
+            echo "create_pr=true" >> $GITHUB_OUTPUT
+            echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+            echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create branch and update versions
+        if: steps.check-versions.outputs.needs_update == 'true' && steps.check-pr.outputs.create_pr == 'true'
+        working-directory: kbve-repo
+        run: |
+          NEW_VERSION="${{ steps.check-versions.outputs.new_version }}"
+          BRANCH_NAME="${{ steps.check-pr.outputs.branch_name }}"
+          STATEFULSET_FILE="apps/kube/realtime/manifests/realtime-statefulset.yaml"
+          
+          # Debug: Check if file exists
+          if [ ! -f "$STATEFULSET_FILE" ]; then
+            echo "ERROR: StatefulSet file not found at $STATEFULSET_FILE"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create and checkout new branch
+          git checkout -b "$BRANCH_NAME"
+          
+          # Update image version in StatefulSet
+          sed -i "s|image: ghcr\.io/kbve/realtime:v[0-9]\+\.[0-9]\+\.[0-9]\+|image: ghcr.io/kbve/realtime:v$NEW_VERSION|g" "$STATEFULSET_FILE"
+          
+          # Update mountPath version in StatefulSet
+          sed -i "s|mountPath: /app/lib/realtime-[0-9]\+\.[0-9]\+\.[0-9]\+/|mountPath: /app/lib/realtime-$NEW_VERSION/|g" "$STATEFULSET_FILE"
+          
+          # Commit changes
+          git add "$STATEFULSET_FILE"
+          git commit -m "Update realtime StatefulSet to v$NEW_VERSION
+
+          - Updated Docker image tag to v$NEW_VERSION
+          - Updated mountPath version to $NEW_VERSION
+          - Auto-generated from realtime docker-build-release workflow"
+          
+          # Push branch
+          git push origin "$BRANCH_NAME"
+      
+      - name: Create Pull Request
+        if: steps.check-versions.outputs.needs_update == 'true' && steps.check-pr.outputs.create_pr == 'true'
+        working-directory: kbve-repo
+        env:
+          GH_TOKEN: ${{ secrets.UNITY_PAT }}
+        run: |
+          NEW_VERSION="${{ steps.check-versions.outputs.new_version }}"
+          BRANCH_NAME="${{ steps.check-pr.outputs.branch_name }}"
+          PR_TITLE="${{ steps.check-pr.outputs.pr_title }}"
+          
+          # Create PR body
+          PR_BODY="## Realtime Version Update
+
+          This PR updates the realtime StatefulSet to version **v$NEW_VERSION** to match the latest release.
+
+          **Changes included:**
+          - Updated Docker image tag from \`ghcr.io/kbve/realtime:v*\` to \`ghcr.io/kbve/realtime:v$NEW_VERSION\`
+          - Updated mountPath from \`/app/lib/realtime-*/\` to \`/app/lib/realtime-$NEW_VERSION/\`
+
+          **Triggered by:**
+          - Successful completion of realtime docker-build-release workflow
+          - Version mismatch detection between mix.exs and StatefulSet
+
+          **Review checklist:**
+          - [ ] Verify the version numbers are correct
+          - [ ] Check that both image tag and mountPath are updated consistently
+          - [ ] Confirm this matches the intended release version
+
+          ---
+          *This PR was automatically created by the update-statefulset-version workflow*"
+          
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY"
+          
+          echo "✅ Created PR: $PR_TITLE"

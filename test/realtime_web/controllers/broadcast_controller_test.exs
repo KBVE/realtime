@@ -290,7 +290,10 @@ defmodule RealtimeWeb.BroadcastControllerTest do
 
       GenCounter
       |> expect(:add, fn ^request_events_key -> :ok end)
-      |> expect(:add, length(messages), fn ^broadcast_events_key -> :ok end)
+      |> expect(:add, length(messages), fn
+        ^broadcast_events_key -> :ok
+        ^connect_events_key -> :ok
+      end)
 
       conn = post(conn, Routes.broadcast_path(conn, :broadcast), %{"messages" => messages})
 
@@ -354,7 +357,10 @@ defmodule RealtimeWeb.BroadcastControllerTest do
 
       GenCounter
       |> expect(:add, fn ^request_events_key -> :ok end)
-      |> expect(:add, length(messages), fn ^broadcast_events_key -> :ok end)
+      |> expect(:add, length(messages), fn
+        ^broadcast_events_key -> :ok
+        ^connect_events_key -> :ok
+      end)
 
       conn = post(conn, Routes.broadcast_path(conn, :broadcast), %{"messages" => messages})
 
