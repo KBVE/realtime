@@ -246,6 +246,15 @@ defmodule Realtime.Extensions.CdcRlsTest do
         pid: self()
       )
 
+      on_exit(fn -> :telemetry.detach(__MODULE__) end)
+
+      :telemetry.attach(
+        __MODULE__,
+        [:realtime, :tenants, :payload, :size],
+        &__MODULE__.handle_telemetry/4,
+        pid: self()
+      )
+
       %{tenant: tenant, conn: conn}
     end
 
